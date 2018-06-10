@@ -1,5 +1,12 @@
 package com.ratiose.testtask.service.impl;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+
+import com.ratiose.testtask.dto.RegisterUserDto;
+import com.ratiose.testtask.entity.Role;
 import com.ratiose.testtask.entity.User;
 import com.ratiose.testtask.repository.UserRepository;
 import com.ratiose.testtask.service.UserService;
@@ -13,19 +20,21 @@ import static java.util.Objects.nonNull;
 @Service
 public class UserServiceImpl implements UserService {
 
+    private static final String USER = "USER";
+
     @Autowired
     private UserRepository userRepository;
 
     private PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     @Override
-    public User registerUser(String email, String password) {
-        User user = userRepository.findByEmail(email);
-        if (user != null) {
-            return null;
+    public Optional<User> registerUser(RegisterUserDto registerUserDto) {
+        User user = userRepository.findByEmail(registerUserDto.getEmail());
+        if (Objects.isNull(user)) {
+            user = createUser(registerUserDto.getEmail(), registerUserDto.getPassword());
+            return Optional.ofNullable(userRepository.save(user));
         }
-        user = createUser(email, password);
-        return userRepository.save(user);
+        return Optional.empty();
     }
 
     @Override
@@ -43,6 +52,15 @@ public class UserServiceImpl implements UserService {
         User user = new User();
         user.setEmail(email);
         user.setPassword(passwordEncoder.encode(password));
+        user.setRoles(createDefaultUserRole());
         return user;
+    }
+
+    private List<Role> createDefaultUserRole() {
+        List<Role> roles = new ArrayList<>();
+        Role role = new Role();
+        role.setName(USER);
+        roles.add(role);
+        return roles;
     }
 }
